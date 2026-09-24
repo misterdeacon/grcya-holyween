@@ -467,6 +467,25 @@
     color:var(--orange);
     font-weight:600;
   }
+  .full-passage-hint{
+    font-size:0.9rem;
+    opacity:0.65;
+    line-height:1.6;
+    margin:0.2rem 0 1rem;
+    max-width:56ch;
+  }
+  .full-passage-links{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.7rem;
+    margin-bottom:0.4rem;
+  }
+  .full-link{
+    flex:0 0 auto;
+    display:inline-block;
+    text-decoration:none;
+    text-align:center;
+  }
   .detail-nav{
     display:flex;
     justify-content:space-between;
@@ -498,6 +517,113 @@
     padding:2.5rem 1.5rem 3.5rem;
     font-size:0.82rem;
     opacity:0.55;
+  }
+
+  /* ---------- Settings / passwordless toggle ---------- */
+  .settings-fab{
+    position:fixed;
+    right:calc(16px + env(safe-area-inset-right,0px));
+    bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    background:var(--paper);
+    border:1px solid var(--line);
+    box-shadow:0 6px 16px var(--shadow);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.2rem;
+    cursor:pointer;
+    z-index:60;
+    color:var(--ink);
+  }
+  .settings-fab:hover{ transform:translateY(-2px); }
+  .settings-fab.active{ border-color:var(--orange); color:var(--orange); }
+
+  .settings-panel{
+    position:fixed;
+    right:calc(16px + env(safe-area-inset-right,0px));
+    bottom:calc(70px + env(safe-area-inset-bottom,0px));
+    width:280px;
+    max-width:calc(100vw - 32px);
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:0 20px 40px var(--shadow);
+    padding:1.1rem 1.1rem 1.2rem;
+    z-index:60;
+    display:none;
+  }
+  .settings-panel.open{ display:block; }
+  .settings-panel h4{
+    font-size:0.95rem;
+    margin:0 0 0.3rem;
+  }
+  .settings-panel .desc{
+    font-size:0.78rem;
+    opacity:0.65;
+    line-height:1.55;
+    margin:0 0 0.8rem;
+  }
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:0.6rem;
+    margin-bottom:0.8rem;
+  }
+  .switch{
+    position:relative;
+    width:42px;
+    height:24px;
+    flex:0 0 auto;
+  }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch .slider{
+    position:absolute;
+    inset:0;
+    background:var(--line);
+    border-radius:999px;
+    cursor:pointer;
+    transition:background 0.15s ease;
+  }
+  .switch .slider::before{
+    content:'';
+    position:absolute;
+    width:18px;height:18px;
+    left:3px;top:3px;
+    background:var(--paper);
+    border-radius:50%;
+    transition:transform 0.15s ease;
+    box-shadow:0 1px 3px var(--shadow);
+  }
+  .switch input:checked + .slider{ background:var(--orange); }
+  .switch input:checked + .slider::before{ transform:translateX(18px); }
+  .settings-panel .copy-row{
+    display:flex;
+    gap:0.4rem;
+  }
+  .settings-panel input[type="text"]{
+    flex:1;
+    font-size:0.78rem;
+    padding:0.5rem 0.6rem;
+    border:1px solid var(--line);
+    border-radius:5px;
+    background:var(--bg);
+    color:var(--ink);
+    min-width:0;
+  }
+  .settings-panel .copy-btn{
+    font-size:0.8rem;
+    padding:0.5rem 0.7rem;
+    flex:0 0 auto;
+  }
+  .settings-panel .copy-note{
+    font-size:0.75rem;
+    color:var(--orange);
+    margin-top:0.4rem;
+    min-height:1em;
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -577,6 +703,13 @@
       <tbody id="detailProps"></tbody>
     </table>
 
+    <h2 id="h2Full">经文全文</h2>
+    <p class="full-passage-hint" id="fullPassageHint">和合本为公共领域译本，可直接阅读全文；因版权限制，英文 NIV 经文请点击下方连结阅读。</p>
+    <div class="full-passage-links">
+      <a class="btn full-link" id="fullLinkZh" target="_blank" rel="noopener">阅读和合本全文 ↗</a>
+      <a class="btn secondary full-link" id="fullLinkEn" target="_blank" rel="noopener">Read in NIV ↗</a>
+    </div>
+
     <div class="detail-nav">
       <button class="nav-link prev" id="prevBtn"><span class="nav-label" id="prevLabelText">上一张</span><span id="prevLabel">&larr;</span></button>
       <button class="nav-link next" id="nextBtn"><span class="nav-label" id="nextLabelText">下一张</span><span id="nextLabel">&rarr;</span></button>
@@ -584,9 +717,27 @@
   </div>
 </div>
 
+<button class="settings-fab" id="settingsFab" aria-label="设置">⚙</button>
+<div class="settings-panel" id="settingsPanel">
+  <h4>免密码模式</h4>
+  <p class="desc">开启后，这台装置点数字可直接进入故事，不再询问密码。分享下面的连结，其他装置打开一次也会自动开启（或关闭）同样的模式。</p>
+  <div class="toggle-row">
+    <span id="toggleLabel">目前：需要密码</span>
+    <label class="switch">
+      <input type="checkbox" id="passwordlessToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+  <div class="copy-row">
+    <input type="text" id="shareLinkInput" readonly>
+    <button class="btn copy-btn" id="copyLinkBtn">复制</button>
+  </div>
+  <div class="copy-note" id="copyNote"></div>
+</div>
+
 <script>
 (function(){
-  var STORIES = [{"id": 1, "password": "holyween1", "title": "大卫与歌利亚", "title_en": "David and Goliath", "range": "撒母耳记上 17:1–54", "range_en": "1 Samuel 17:1–54", "verseRef": "撒母耳记上 17:45", "verseRef_en": "1 Samuel 17:45", "verse": "你来攻击我，是靠着刀枪和铜戟；我来攻击你，是靠着万军之耶和华的名。", "verse_en": "You come to me with sword and spear and javelin, but I come to you in the name of the LORD Almighty.", "story": "非利士巨人歌利亚向以色列军队挑战，没有人敢迎战。年轻的大卫虽然没有穿盔甲，也没有使用刀剑，却凭着对神的信心，拿起弹弓和石头击败歌利亚，展现了对神的信靠。", "story_en": "The Philistine giant Goliath challenged Israel's army, and no one dared to face him. Though young David wore no armor and carried no sword, he trusted God and struck Goliath down with a sling and a stone, showing his confidence in the Lord.", "props": [["大卫", "牧羊人服装、头巾、弹弓、石头、小布袋。"], ["歌利亚", "盔甲、头盔、盾牌、玩具剑。"], ["扫罗王", "皇冠、王袍、权杖。"], ["士兵", "盾牌、纸板剑。"], ["场景道具", "巨人身高标示牌、战场布景。"]], "props_en": [["David", "Shepherd's outfit, headscarf, slingshot, stones, small cloth pouch."], ["Goliath", "Armor, helmet, shield, toy sword."], ["King Saul", "Crown, royal robe, scepter."], ["Soldiers", "Shields, cardboard swords."], ["Set props", "Giant height marker, battlefield backdrop."]]}, {"id": 2, "password": "2holyween", "title": "约拿与大鱼", "title_en": "Jonah and the Big Fish", "range": "约拿书 1:1–2:10；3:1–5", "range_en": "Jonah 1:1–2:10; 3:1–5", "verseRef": "约拿书 2:1", "verseRef_en": "Jonah 2:1", "verse": "约拿在鱼腹中祷告耶和华他的神。", "verse_en": "Jonah prayed to the LORD his God from inside the fish.", "story": "神吩咐约拿前往尼尼微传讲信息，但约拿选择逃跑，搭船前往相反的方向。后来海上发生暴风雨，约拿被抛进海里，神安排一条大鱼吞了他。约拿在鱼腹中祷告，最后被吐在陆地上，并前往尼尼微完成神的吩咐。", "story_en": "God told Jonah to go preach in Nineveh, but Jonah fled by ship in the opposite direction. A storm arose at sea, Jonah was thrown overboard, and God sent a great fish to swallow him. Jonah prayed inside the fish, was spat out onto dry land, and went on to Nineveh to obey God's command.", "props": [["约拿", "棕色长袍、头巾、腰带。"], ["船长和水手", "条纹衣服、船长帽、绳子。"], ["大鱼", "大型纸箱鱼、鱼鳍、鱼眼睛、鱼嘴。"], ["尼尼微王", "皇冠、王袍。"], ["场景道具", "纸板船、蓝色布料模拟海浪、暴风雨音效。"]], "props_en": [["Jonah", "Brown robe, headscarf, belt."], ["Captain & sailors", "Striped shirts, captain's hat, rope."], ["The big fish", "Large cardboard fish, fins, eyes, mouth."], ["King of Nineveh", "Crown, royal robe."], ["Set props", "Cardboard boat, blue fabric for waves, storm sound effects."]]}, {"id": 3, "password": "holyween3", "title": "挪亚方舟", "title_en": "Noah's Ark", "range": "创世记 6:9–9:17", "range_en": "Genesis 6:9–9:17", "verseRef": "创世记 6:22", "verseRef_en": "Genesis 6:22", "verse": "挪亚就这样行。凡神所吩咐的，他都照样行了。", "verse_en": "Noah did everything just as God commanded him.", "story": "当时地上充满了罪恶，神吩咐挪亚建造方舟，并带着家人和各类动物进入方舟。洪水来临时，方舟保护了他们。洪水退去后，神与挪亚立约，并以彩虹作为立约的记号。", "story_en": "The earth was filled with wickedness, so God told Noah to build an ark and bring his family and every kind of animal aboard. The ark protected them through the flood, and afterward God made a covenant with Noah, marked by a rainbow.", "props": [["挪亚", "长袍、白胡子、头巾、木杖。"], ["挪亚妻子", "长裙、头巾、披肩。"], ["挪亚的三个儿子和儿媳", "长袍、围巾、腰带。"], ["动物角色", "狮子耳朵、兔子耳朵、斑马条纹衣、鸟类翅膀等。"], ["场景道具", "纸箱方舟、动物名牌、彩虹布条、树枝。"]], "props_en": [["Noah", "Robe, white beard, headscarf, walking staff."], ["Noah's wife", "Long dress, headscarf, shawl."], ["Noah's three sons & their wives", "Robes, scarves, belts."], ["Animals", "Lion ears, rabbit ears, zebra-striped clothing, bird wings, etc."], ["Set props", "Cardboard-box ark, animal name tags, rainbow ribbon, branches."]]}, {"id": 4, "password": "4holyween", "title": "以斯帖记", "title_en": "Esther", "range": "以斯帖记 2:5–8:17", "range_en": "Esther 2:5–8:17", "verseRef": "以斯帖记 4:14", "verseRef_en": "Esther 4:14", "verse": "焉知你得了王后的位分，不是为现今的机会吗？", "verse_en": "And who knows but that you have come to your royal position for such a time as this?", "story": "以斯帖成为波斯王后后，得知哈曼计划灭绝犹太人。她冒着生命危险来到王面前，为自己的民族求情。最终，神使用以斯帖和末底改拯救了犹太百姓。", "story_en": "After Esther became queen of Persia, she learned that Haman was plotting to destroy the Jews. At great personal risk she approached the king to plead for her people. Through Esther and Mordecai, God delivered the Jewish people.", "props": [["以斯帖", "华丽长裙、皇冠、披肩、首饰。"], ["亚哈随鲁王", "王袍、皇冠、权杖。"], ["哈曼", "华丽长袍、披风。"], ["末底改", "长袍、头巾。"], ["宫女和侍卫", "统一服装、头饰、纸板长矛。"], ["场景道具", "王座、金色杯子、宴席桌布、宫殿背景。"]], "props_en": [["Esther", "Elaborate gown, crown, shawl, jewelry."], ["King Xerxes (Ahasuerus)", "Royal robe, crown, scepter."], ["Haman", "Elaborate robe, cape."], ["Mordecai", "Robe, headscarf."], ["Court ladies & guards", "Matching outfits, headpieces, cardboard spears."], ["Set props", "Throne, gold cup, banquet tablecloth, palace backdrop."]]}, {"id": 5, "password": "holyween5", "title": "但以理在狮子坑", "title_en": "Daniel in the Lions' Den", "range": "但以理书 6:1–28", "range_en": "Daniel 6:1–28", "verseRef": "但以理书 6:22", "verseRef_en": "Daniel 6:22", "verse": "我的神差遣使者，封住狮子的口，叫狮子不伤我。", "verse_en": "My God sent his angel, and he shut the mouths of the lions. They have not hurt me.", "story": "但以理因为持守祷告的习惯，被嫉妒他的官员陷害，最终被丢进狮子坑。然而，但以理仍然忠心倚靠神。神差遣使者封住狮子的口，使他平安无事。大利乌王后来也承认但以理所敬拜的神。", "story_en": "Daniel kept his habit of prayer despite officials who envied him and had him thrown into the lions' den. Daniel remained faithful to God, who sent an angel to shut the lions' mouths and kept him safe. King Darius later acknowledged the God Daniel worshiped.", "props": [["但以理", "蓝色或米色长袍、头巾。"], ["大利乌王", "皇冠、披风、权杖。"], ["官员", "深色长袍、腰带。"], ["天使", "白色服装、翅膀。"], ["狮子", "棕色衣服、狮子耳朵头箍、尾巴。"], ["场景道具", "纸板石墙、狮子坑入口、假石头。"]], "props_en": [["Daniel", "Blue or beige robe, headscarf."], ["King Darius", "Crown, cape, scepter."], ["Officials", "Dark robes, belts."], ["Angel", "White outfit, wings."], ["Lions", "Brown clothing, lion-ear headband, tail."], ["Set props", "Cardboard stone wall, den entrance, fake rocks."]]}, {"id": 6, "password": "6holyween", "title": "摩西分红海", "title_en": "Moses Parts the Red Sea", "range": "出埃及记 14:1–31", "range_en": "Exodus 14:1–31", "verseRef": "出埃及记 14:21", "verseRef_en": "Exodus 14:21", "verse": "耶和华便用大东风，使海水一夜退去，水便分开，海就成了干地。", "verse_en": "The LORD drove the sea back with a strong east wind all night, and turned it into dry land, and the waters were divided.", "story": "摩西带领以色列人离开埃及后，法老率领军队追赶他们。当百姓被红海阻挡、前有海后有追兵时，神吩咐摩西举杖伸手向海。红海分开，以色列人走干地过去，神拯救他们脱离埃及军队。", "story_en": "After Moses led Israel out of Egypt, Pharaoh's army pursued them. Trapped between the Red Sea and the pursuing army, God told Moses to stretch out his staff over the sea. The waters parted, Israel crossed on dry ground, and God delivered them from the Egyptian army.", "props": [["摩西", "长袍、头巾、白胡子、木杖。"], ["法老", "埃及风格头饰、金色项链、王袍。"], ["亚伦", "长袍、头巾。"], ["以色列百姓", "米色或棕色长袍、布包。"], ["埃及士兵", "头盔、盾牌、纸板剑。"], ["场景道具", "两大块蓝色布料、纸板战车、红海背景。"]], "props_en": [["Moses", "Robe, headscarf, white beard, walking staff."], ["Pharaoh", "Egyptian-style headdress, gold necklace, royal robe."], ["Aaron", "Robe, headscarf."], ["Israelites", "Beige or brown robes, cloth bundles."], ["Egyptian soldiers", "Helmets, shields, cardboard swords."], ["Set props", "Two large sheets of blue fabric, cardboard chariots, Red Sea backdrop."]]}, {"id": 7, "password": "holyween7", "title": "耶稣平静风浪", "title_en": "Jesus Calms the Storm", "range": "马可福音 4:35–41", "range_en": "Mark 4:35–41", "verseRef": "马可福音 4:39", "verseRef_en": "Mark 4:39", "verse": "耶稣醒了，斥责风，向海说：住了吧！静了吧！", "verse_en": "He got up, rebuked the wind and said to the waves, \"Quiet! Be still!\"", "story": "耶稣和门徒坐船渡过海时，突然遇到猛烈的风浪。门徒非常害怕，但耶稣却在船上睡觉。门徒叫醒耶稣后，耶稣斥责风和海，风浪就平静了，门徒因此惊讶于祂的权柄。", "story_en": "As Jesus and his disciples crossed the sea by boat, a fierce storm suddenly arose. The disciples were terrified, but Jesus was asleep in the boat. When they woke him, he rebuked the wind and the sea, and the storm was stilled — leaving the disciples amazed at his authority.", "props": [["耶稣", "白色或米色长袍、披肩、腰带。"], ["彼得、约翰、雅各和其他门徒", "棕色或蓝色长袍、头巾。"], ["场景道具", "纸箱船、蓝色布料模拟海浪、风扇、风浪音效。"]], "props_en": [["Jesus", "White or beige robe, shawl, belt."], ["Peter, John, James & other disciples", "Brown or blue robes, headscarves."], ["Set props", "Cardboard boat, blue fabric for waves, fan, storm sound effects."]]}, {"id": 8, "password": "8holyween", "title": "巴兰与驴", "title_en": "Balaam and the Donkey", "range": "民数记 22:1–35", "range_en": "Numbers 22:1–35", "verseRef": "民数记 22:28", "verseRef_en": "Numbers 22:28", "verse": "耶和华叫驴开口，对巴兰说……", "verse_en": "Then the LORD opened the donkey's mouth, and it said to Balaam...", "story": "巴兰骑着驴前往目的地时，耶和华的使者挡住了道路。驴看见使者，便几次避开道路，巴兰却看不见，还因此责打驴。后来神使驴开口说话，又让巴兰看见使者，使他明白自己需要听从神。", "story_en": "As Balaam rode his donkey to his destination, the angel of the LORD blocked the road. The donkey saw the angel and turned aside several times, but Balaam could not see it and beat the donkey. Then God opened the donkey's mouth to speak, and let Balaam see the angel, so he would understand he needed to obey God.", "props": [["巴兰", "长袍、头巾、腰带、手杖。"], ["驴", "灰色或棕色衣服、长耳朵头箍、尾巴。"], ["耶和华的使者", "白色长袍、翅膀、道具剑。"], ["摩押使者", "披风、头巾。"], ["场景道具", "道路布景、树枝、纸板剑。"]], "props_en": [["Balaam", "Robe, headscarf, belt, walking staff."], ["The donkey", "Grey or brown clothing, long-ear headband, tail."], ["Angel of the LORD", "White robe, wings, prop sword."], ["Moabite messengers", "Cape, headscarf."], ["Set props", "Road backdrop, branches, cardboard sword."]]}];
+  var STORIES = [{"id": 1, "password": "holyween1", "title": "大卫与歌利亚", "title_en": "David and Goliath", "range": "撒母耳记上 17:1–54", "range_en": "1 Samuel 17:1–54", "bg_query": "1 Samuel 17:1-54", "verseRef": "撒母耳记上 17:45", "verseRef_en": "1 Samuel 17:45", "verse": "你来攻击我，是靠着刀枪和铜戟；我来攻击你，是靠着万军之耶和华的名。", "verse_en": "You come to me with sword and spear and javelin, but I come to you in the name of the LORD Almighty.", "story": "非利士巨人歌利亚向以色列军队挑战，没有人敢迎战。年轻的大卫虽然没有穿盔甲，也没有使用刀剑，却凭着对神的信心，拿起弹弓和石头击败歌利亚，展现了对神的信靠。", "story_en": "The Philistine giant Goliath challenged Israel's army, and no one dared to face him. Though young David wore no armor and carried no sword, he trusted God and struck Goliath down with a sling and a stone, showing his confidence in the Lord.", "props": [["大卫", "牧羊人服装、头巾、弹弓、石头、小布袋。"], ["歌利亚", "盔甲、头盔、盾牌、玩具剑。"], ["扫罗王", "皇冠、王袍、权杖。"], ["士兵", "盾牌、纸板剑。"], ["场景道具", "巨人身高标示牌、战场布景。"]], "props_en": [["David", "Shepherd's outfit, headscarf, slingshot, stones, small cloth pouch."], ["Goliath", "Armor, helmet, shield, toy sword."], ["King Saul", "Crown, royal robe, scepter."], ["Soldiers", "Shields, cardboard swords."], ["Set props", "Giant height marker, battlefield backdrop."]]}, {"id": 2, "password": "2holyween", "title": "约拿与大鱼", "title_en": "Jonah and the Big Fish", "range": "约拿书 1:1–2:10；3:1–5", "range_en": "Jonah 1:1–2:10; 3:1–5", "bg_query": "Jonah 1:1-2:10,Jonah 3:1-5", "verseRef": "约拿书 2:1", "verseRef_en": "Jonah 2:1", "verse": "约拿在鱼腹中祷告耶和华他的神。", "verse_en": "Jonah prayed to the LORD his God from inside the fish.", "story": "神吩咐约拿前往尼尼微传讲信息，但约拿选择逃跑，搭船前往相反的方向。后来海上发生暴风雨，约拿被抛进海里，神安排一条大鱼吞了他。约拿在鱼腹中祷告，最后被吐在陆地上，并前往尼尼微完成神的吩咐。", "story_en": "God told Jonah to go preach in Nineveh, but Jonah fled by ship in the opposite direction. A storm arose at sea, Jonah was thrown overboard, and God sent a great fish to swallow him. Jonah prayed inside the fish, was spat out onto dry land, and went on to Nineveh to obey God's command.", "props": [["约拿", "棕色长袍、头巾、腰带。"], ["船长和水手", "条纹衣服、船长帽、绳子。"], ["大鱼", "大型纸箱鱼、鱼鳍、鱼眼睛、鱼嘴。"], ["尼尼微王", "皇冠、王袍。"], ["场景道具", "纸板船、蓝色布料模拟海浪、暴风雨音效。"]], "props_en": [["Jonah", "Brown robe, headscarf, belt."], ["Captain & sailors", "Striped shirts, captain's hat, rope."], ["The big fish", "Large cardboard fish, fins, eyes, mouth."], ["King of Nineveh", "Crown, royal robe."], ["Set props", "Cardboard boat, blue fabric for waves, storm sound effects."]]}, {"id": 3, "password": "holyween3", "title": "挪亚方舟", "title_en": "Noah's Ark", "range": "创世记 6:9–9:17", "range_en": "Genesis 6:9–9:17", "bg_query": "Genesis 6:9-9:17", "verseRef": "创世记 6:22", "verseRef_en": "Genesis 6:22", "verse": "挪亚就这样行。凡神所吩咐的，他都照样行了。", "verse_en": "Noah did everything just as God commanded him.", "story": "当时地上充满了罪恶，神吩咐挪亚建造方舟，并带着家人和各类动物进入方舟。洪水来临时，方舟保护了他们。洪水退去后，神与挪亚立约，并以彩虹作为立约的记号。", "story_en": "The earth was filled with wickedness, so God told Noah to build an ark and bring his family and every kind of animal aboard. The ark protected them through the flood, and afterward God made a covenant with Noah, marked by a rainbow.", "props": [["挪亚", "长袍、白胡子、头巾、木杖。"], ["挪亚妻子", "长裙、头巾、披肩。"], ["挪亚的三个儿子和儿媳", "长袍、围巾、腰带。"], ["动物角色", "狮子耳朵、兔子耳朵、斑马条纹衣、鸟类翅膀等。"], ["场景道具", "纸箱方舟、动物名牌、彩虹布条、树枝。"]], "props_en": [["Noah", "Robe, white beard, headscarf, walking staff."], ["Noah's wife", "Long dress, headscarf, shawl."], ["Noah's three sons & their wives", "Robes, scarves, belts."], ["Animals", "Lion ears, rabbit ears, zebra-striped clothing, bird wings, etc."], ["Set props", "Cardboard-box ark, animal name tags, rainbow ribbon, branches."]]}, {"id": 4, "password": "4holyween", "title": "以斯帖记", "title_en": "Esther", "range": "以斯帖记 2:5–8:17", "range_en": "Esther 2:5–8:17", "bg_query": "Esther 2:5-8:17", "verseRef": "以斯帖记 4:14", "verseRef_en": "Esther 4:14", "verse": "焉知你得了王后的位分，不是为现今的机会吗？", "verse_en": "And who knows but that you have come to your royal position for such a time as this?", "story": "以斯帖成为波斯王后后，得知哈曼计划灭绝犹太人。她冒着生命危险来到王面前，为自己的民族求情。最终，神使用以斯帖和末底改拯救了犹太百姓。", "story_en": "After Esther became queen of Persia, she learned that Haman was plotting to destroy the Jews. At great personal risk she approached the king to plead for her people. Through Esther and Mordecai, God delivered the Jewish people.", "props": [["以斯帖", "华丽长裙、皇冠、披肩、首饰。"], ["亚哈随鲁王", "王袍、皇冠、权杖。"], ["哈曼", "华丽长袍、披风。"], ["末底改", "长袍、头巾。"], ["宫女和侍卫", "统一服装、头饰、纸板长矛。"], ["场景道具", "王座、金色杯子、宴席桌布、宫殿背景。"]], "props_en": [["Esther", "Elaborate gown, crown, shawl, jewelry."], ["King Xerxes (Ahasuerus)", "Royal robe, crown, scepter."], ["Haman", "Elaborate robe, cape."], ["Mordecai", "Robe, headscarf."], ["Court ladies & guards", "Matching outfits, headpieces, cardboard spears."], ["Set props", "Throne, gold cup, banquet tablecloth, palace backdrop."]]}, {"id": 5, "password": "holyween5", "title": "但以理在狮子坑", "title_en": "Daniel in the Lions' Den", "range": "但以理书 6:1–28", "range_en": "Daniel 6:1–28", "bg_query": "Daniel 6:1-28", "verseRef": "但以理书 6:22", "verseRef_en": "Daniel 6:22", "verse": "我的神差遣使者，封住狮子的口，叫狮子不伤我。", "verse_en": "My God sent his angel, and he shut the mouths of the lions. They have not hurt me.", "story": "但以理因为持守祷告的习惯，被嫉妒他的官员陷害，最终被丢进狮子坑。然而，但以理仍然忠心倚靠神。神差遣使者封住狮子的口，使他平安无事。大利乌王后来也承认但以理所敬拜的神。", "story_en": "Daniel kept his habit of prayer despite officials who envied him and had him thrown into the lions' den. Daniel remained faithful to God, who sent an angel to shut the lions' mouths and kept him safe. King Darius later acknowledged the God Daniel worshiped.", "props": [["但以理", "蓝色或米色长袍、头巾。"], ["大利乌王", "皇冠、披风、权杖。"], ["官员", "深色长袍、腰带。"], ["天使", "白色服装、翅膀。"], ["狮子", "棕色衣服、狮子耳朵头箍、尾巴。"], ["场景道具", "纸板石墙、狮子坑入口、假石头。"]], "props_en": [["Daniel", "Blue or beige robe, headscarf."], ["King Darius", "Crown, cape, scepter."], ["Officials", "Dark robes, belts."], ["Angel", "White outfit, wings."], ["Lions", "Brown clothing, lion-ear headband, tail."], ["Set props", "Cardboard stone wall, den entrance, fake rocks."]]}, {"id": 6, "password": "6holyween", "title": "摩西分红海", "title_en": "Moses Parts the Red Sea", "range": "出埃及记 14:1–31", "range_en": "Exodus 14:1–31", "bg_query": "Exodus 14:1-31", "verseRef": "出埃及记 14:21", "verseRef_en": "Exodus 14:21", "verse": "耶和华便用大东风，使海水一夜退去，水便分开，海就成了干地。", "verse_en": "The LORD drove the sea back with a strong east wind all night, and turned it into dry land, and the waters were divided.", "story": "摩西带领以色列人离开埃及后，法老率领军队追赶他们。当百姓被红海阻挡、前有海后有追兵时，神吩咐摩西举杖伸手向海。红海分开，以色列人走干地过去，神拯救他们脱离埃及军队。", "story_en": "After Moses led Israel out of Egypt, Pharaoh's army pursued them. Trapped between the Red Sea and the pursuing army, God told Moses to stretch out his staff over the sea. The waters parted, Israel crossed on dry ground, and God delivered them from the Egyptian army.", "props": [["摩西", "长袍、头巾、白胡子、木杖。"], ["法老", "埃及风格头饰、金色项链、王袍。"], ["亚伦", "长袍、头巾。"], ["以色列百姓", "米色或棕色长袍、布包。"], ["埃及士兵", "头盔、盾牌、纸板剑。"], ["场景道具", "两大块蓝色布料、纸板战车、红海背景。"]], "props_en": [["Moses", "Robe, headscarf, white beard, walking staff."], ["Pharaoh", "Egyptian-style headdress, gold necklace, royal robe."], ["Aaron", "Robe, headscarf."], ["Israelites", "Beige or brown robes, cloth bundles."], ["Egyptian soldiers", "Helmets, shields, cardboard swords."], ["Set props", "Two large sheets of blue fabric, cardboard chariots, Red Sea backdrop."]]}, {"id": 7, "password": "holyween7", "title": "耶稣平静风浪", "title_en": "Jesus Calms the Storm", "range": "马可福音 4:35–41", "range_en": "Mark 4:35–41", "bg_query": "Mark 4:35-41", "verseRef": "马可福音 4:39", "verseRef_en": "Mark 4:39", "verse": "耶稣醒了，斥责风，向海说：住了吧！静了吧！", "verse_en": "He got up, rebuked the wind and said to the waves, \"Quiet! Be still!\"", "story": "耶稣和门徒坐船渡过海时，突然遇到猛烈的风浪。门徒非常害怕，但耶稣却在船上睡觉。门徒叫醒耶稣后，耶稣斥责风和海，风浪就平静了，门徒因此惊讶于祂的权柄。", "story_en": "As Jesus and his disciples crossed the sea by boat, a fierce storm suddenly arose. The disciples were terrified, but Jesus was asleep in the boat. When they woke him, he rebuked the wind and the sea, and the storm was stilled — leaving the disciples amazed at his authority.", "props": [["耶稣", "白色或米色长袍、披肩、腰带。"], ["彼得、约翰、雅各和其他门徒", "棕色或蓝色长袍、头巾。"], ["场景道具", "纸箱船、蓝色布料模拟海浪、风扇、风浪音效。"]], "props_en": [["Jesus", "White or beige robe, shawl, belt."], ["Peter, John, James & other disciples", "Brown or blue robes, headscarves."], ["Set props", "Cardboard boat, blue fabric for waves, fan, storm sound effects."]]}, {"id": 8, "password": "8holyween", "title": "巴兰与驴", "title_en": "Balaam and the Donkey", "range": "民数记 22:1–35", "range_en": "Numbers 22:1–35", "bg_query": "Numbers 22:1-35", "verseRef": "民数记 22:28", "verseRef_en": "Numbers 22:28", "verse": "耶和华叫驴开口，对巴兰说……", "verse_en": "Then the LORD opened the donkey's mouth, and it said to Balaam...", "story": "巴兰骑着驴前往目的地时，耶和华的使者挡住了道路。驴看见使者，便几次避开道路，巴兰却看不见，还因此责打驴。后来神使驴开口说话，又让巴兰看见使者，使他明白自己需要听从神。", "story_en": "As Balaam rode his donkey to his destination, the angel of the LORD blocked the road. The donkey saw the angel and turned aside several times, but Balaam could not see it and beat the donkey. Then God opened the donkey's mouth to speak, and let Balaam see the angel, so he would understand he needed to obey God.", "props": [["巴兰", "长袍、头巾、腰带、手杖。"], ["驴", "灰色或棕色衣服、长耳朵头箍、尾巴。"], ["耶和华的使者", "白色长袍、翅膀、道具剑。"], ["摩押使者", "披风、头巾。"], ["场景道具", "道路布景、树枝、纸板剑。"]], "props_en": [["Balaam", "Robe, headscarf, belt, walking staff."], ["The donkey", "Grey or brown clothing, long-ear headband, tail."], ["Angel of the LORD", "White robe, wings, prop sword."], ["Moabite messengers", "Cape, headscarf."], ["Set props", "Road backdrop, branches, cardboard sword."]]}];
 
   var STORAGE_KEY = 'holyween_unlocked_v1';
   function loadUnlocked(){
@@ -600,6 +751,82 @@
   }
   var unlocked = loadUnlocked();
 
+  // ---------- Passwordless mode ----------
+  var PW_KEY = 'holyween_passwordless_v1';
+  function loadPasswordless(){
+    try{ return localStorage.getItem(PW_KEY) === '1'; }catch(e){ return false; }
+  }
+  function savePasswordless(v){
+    try{ localStorage.setItem(PW_KEY, v ? '1' : '0'); }catch(e){}
+  }
+  // A ?mode=open or ?mode=locked link applies the mode to THIS device once, then cleans the URL.
+  (function applyModeParam(){
+    try{
+      var params = new URLSearchParams(window.location.search);
+      var mode = params.get('mode');
+      if(mode === 'open'){ savePasswordless(true); }
+      else if(mode === 'locked'){ savePasswordless(false); }
+      if(mode){
+        params.delete('mode');
+        var qs = params.toString();
+        var newUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }catch(e){}
+  })();
+  var passwordless = loadPasswordless();
+
+  var settingsFab = document.getElementById('settingsFab');
+  var settingsPanel = document.getElementById('settingsPanel');
+  var passwordlessToggle = document.getElementById('passwordlessToggle');
+  var toggleLabel = document.getElementById('toggleLabel');
+  var shareLinkInput = document.getElementById('shareLinkInput');
+  var copyLinkBtn = document.getElementById('copyLinkBtn');
+  var copyNote = document.getElementById('copyNote');
+
+  function refreshSettingsUI(){
+    passwordlessToggle.checked = passwordless;
+    toggleLabel.textContent = passwordless ? '目前：免密码' : '目前：需要密码';
+    settingsFab.classList.toggle('active', passwordless);
+    var base = window.location.origin + window.location.pathname;
+    shareLinkInput.value = base + '?mode=' + (passwordless ? 'open' : 'locked');
+    copyNote.textContent = '';
+  }
+  refreshSettingsUI();
+
+  settingsFab.addEventListener('click', function(){
+    settingsPanel.classList.toggle('open');
+  });
+  document.addEventListener('click', function(e){
+    if(settingsPanel.classList.contains('open') &&
+       !settingsPanel.contains(e.target) && e.target !== settingsFab){
+      settingsPanel.classList.remove('open');
+    }
+  });
+  passwordlessToggle.addEventListener('change', function(){
+    passwordless = passwordlessToggle.checked;
+    savePasswordless(passwordless);
+    refreshSettingsUI();
+    buildGrid();
+  });
+  copyLinkBtn.addEventListener('click', function(){
+    var text = shareLinkInput.value;
+    function fallback(){
+      shareLinkInput.focus();
+      shareLinkInput.select();
+      try{ document.execCommand('copy'); copyNote.textContent = '已复制连结'; }
+      catch(e){ copyNote.textContent = '请手动选取并复制'; }
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        copyNote.textContent = '已复制连结，发送给其他装置打开一次即可';
+      }, fallback);
+    } else {
+      fallback();
+    }
+  });
+
+
   var grid = document.getElementById('grid');
   var tiles = {};
 
@@ -607,7 +834,7 @@
     grid.innerHTML = '';
     STORIES.forEach(function(s){
       var tile = document.createElement('div');
-      tile.className = 'tile' + (unlocked.indexOf(s.id) > -1 ? ' unlocked' : '');
+      tile.className = 'tile' + ((passwordless || unlocked.indexOf(s.id) > -1) ? ' unlocked' : '');
       tile.setAttribute('role','button');
       tile.setAttribute('tabindex','0');
       tile.setAttribute('aria-label', '故事 ' + s.id);
@@ -672,7 +899,7 @@
   modalBackdrop.addEventListener('click', function(e){ if(e.target === modalBackdrop) closeModal(); });
 
   function openTile(id){
-    if(unlocked.indexOf(id) > -1){
+    if(passwordless || unlocked.indexOf(id) > -1){
       openDetail(id);
     } else {
       openModal(id);
@@ -701,10 +928,16 @@
   var backBtnText = document.getElementById('backBtnText');
   var prevLabelText = document.getElementById('prevLabelText');
   var nextLabelText = document.getElementById('nextLabelText');
+  var h2Full = document.getElementById('h2Full');
+  var fullPassageHint = document.getElementById('fullPassageHint');
+  var fullLinkZh = document.getElementById('fullLinkZh');
+  var fullLinkEn = document.getElementById('fullLinkEn');
 
   var UI = {
-    zh: { story:'故事介绍', verse:'经典经文', props:'服装与道具', role:'角色 / 类别', item:'服装与道具', back:'返回总览', prev:'上一张', next:'下一张', toggle:'EN' },
-    en: { story:'The Story', verse:'Key Verse', props:'Costumes & Props', role:'Character / Category', item:'Costumes & Props', back:'Back to overview', prev:'Previous', next:'Next', toggle:'中文' }
+    zh: { story:'故事介绍', verse:'经典经文', props:'服装与道具', role:'角色 / 类别', item:'服装与道具', back:'返回总览', prev:'上一张', next:'下一张', toggle:'EN',
+          full:'经文全文', fullHint:'和合本为公共领域译本，可直接阅读全文；因版权限制，英文 NIV 经文请点击下方连结阅读。', linkZh:'阅读和合本全文 ↗', linkEn:'Read in NIV ↗' },
+    en: { story:'The Story', verse:'Key Verse', props:'Costumes & Props', role:'Character / Category', item:'Costumes & Props', back:'Back to overview', prev:'Previous', next:'Next', toggle:'中文',
+          full:'Full Passage', fullHint:'The CUV (和合本) is public domain, so it opens as full text below. NIV is a licensed modern translation, so please read it via the link.', linkZh:'阅读和合本全文 ↗', linkEn:'Read in NIV ↗' }
   };
   var currentLang = 'zh';
   var currentId = null;
@@ -743,6 +976,14 @@
     prevLabelText.textContent = t.prev;
     nextLabelText.textContent = t.next;
     langToggle.textContent = t.toggle;
+
+    h2Full.textContent = t.full;
+    fullPassageHint.textContent = t.fullHint;
+    fullLinkZh.textContent = t.linkZh;
+    fullLinkEn.textContent = t.linkEn;
+    var q = encodeURIComponent(story.bg_query);
+    fullLinkZh.href = 'https://www.biblegateway.com/passage/?search=' + q + '&version=CUVS';
+    fullLinkEn.href = 'https://www.biblegateway.com/passage/?search=' + q + '&version=NIV';
   }
 
   function openDetail(id){
