@@ -571,7 +571,6 @@
     align-items:center;
     justify-content:space-between;
     gap:0.6rem;
-    margin-bottom:0.8rem;
   }
   .switch{
     position:relative;
@@ -600,31 +599,6 @@
   }
   .switch input:checked + .slider{ background:var(--orange); }
   .switch input:checked + .slider::before{ transform:translateX(18px); }
-  .settings-panel .copy-row{
-    display:flex;
-    gap:0.4rem;
-  }
-  .settings-panel input[type="text"]{
-    flex:1;
-    font-size:0.78rem;
-    padding:0.5rem 0.6rem;
-    border:1px solid var(--line);
-    border-radius:5px;
-    background:var(--bg);
-    color:var(--ink);
-    min-width:0;
-  }
-  .settings-panel .copy-btn{
-    font-size:0.8rem;
-    padding:0.5rem 0.7rem;
-    flex:0 0 auto;
-  }
-  .settings-panel .copy-note{
-    font-size:0.75rem;
-    color:var(--orange);
-    margin-top:0.4rem;
-    min-height:1em;
-  }
 
   @media (prefers-reduced-motion: reduce){
     .hero-img, .hero-caption, .detail, .tile{ transition:none !important; animation:none !important; }
@@ -663,9 +637,9 @@
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal-card" id="modalCard">
     <button class="modal-close" id="modalClose" aria-label="关闭">&times;</button>
-    <span class="modal-stamp">机密故事</span>
+    <span class="modal-stamp" id="modalStamp">机密故事</span>
     <h3 id="modalTitle">故事 1</h3>
-    <p class="hint">输入你收到的密码，解锁这个故事的内容。</p>
+    <p class="hint" id="modalHint">输入你收到的密码，解锁这个故事的内容。</p>
     <input type="password" id="modalInput" placeholder="请输入密码" autocomplete="off">
     <div class="modal-error" id="modalError"></div>
     <div class="modal-actions">
@@ -720,7 +694,7 @@
 <button class="settings-fab" id="settingsFab" aria-label="设置">⚙</button>
 <div class="settings-panel" id="settingsPanel">
   <h4>免密码模式</h4>
-  <p class="desc">开启后，这台装置点数字可直接进入故事，不再询问密码。分享下面的连结，其他装置打开一次也会自动开启（或关闭）同样的模式。</p>
+  <p class="desc">开启后，这台装置点数字可直接进入故事，不再询问密码。只有输入组长密码才能开关这个设定；要在其他装置控制，请在那台装置重新点击设置并输入组长密码。</p>
   <div class="toggle-row">
     <span id="toggleLabel">目前：需要密码</span>
     <label class="switch">
@@ -728,11 +702,6 @@
       <span class="slider"></span>
     </label>
   </div>
-  <div class="copy-row">
-    <input type="text" id="shareLinkInput" readonly>
-    <button class="btn copy-btn" id="copyLinkBtn">复制</button>
-  </div>
-  <div class="copy-note" id="copyNote"></div>
 </div>
 
 <script>
@@ -751,51 +720,42 @@
   }
   var unlocked = loadUnlocked();
 
-  // ---------- Passwordless mode ----------
+  // ---------- Passwordless mode (admin-gated) ----------
+  var ADMIN_PASSWORD = 'holyweenlead'; // change this to your own admin passcode
   var PW_KEY = 'holyween_passwordless_v1';
+  var ADMIN_KEY = 'holyween_admin_ok_v1';
   function loadPasswordless(){
     try{ return localStorage.getItem(PW_KEY) === '1'; }catch(e){ return false; }
   }
   function savePasswordless(v){
     try{ localStorage.setItem(PW_KEY, v ? '1' : '0'); }catch(e){}
   }
-  // A ?mode=open or ?mode=locked link applies the mode to THIS device once, then cleans the URL.
-  (function applyModeParam(){
-    try{
-      var params = new URLSearchParams(window.location.search);
-      var mode = params.get('mode');
-      if(mode === 'open'){ savePasswordless(true); }
-      else if(mode === 'locked'){ savePasswordless(false); }
-      if(mode){
-        params.delete('mode');
-        var qs = params.toString();
-        var newUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
-        window.history.replaceState({}, '', newUrl);
-      }
-    }catch(e){}
-  })();
+  function isAdminAuthed(){
+    try{ return localStorage.getItem(ADMIN_KEY) === '1'; }catch(e){ return false; }
+  }
+  function saveAdminAuthed(){
+    try{ localStorage.setItem(ADMIN_KEY, '1'); }catch(e){}
+  }
   var passwordless = loadPasswordless();
 
   var settingsFab = document.getElementById('settingsFab');
   var settingsPanel = document.getElementById('settingsPanel');
   var passwordlessToggle = document.getElementById('passwordlessToggle');
   var toggleLabel = document.getElementById('toggleLabel');
-  var shareLinkInput = document.getElementById('shareLinkInput');
-  var copyLinkBtn = document.getElementById('copyLinkBtn');
-  var copyNote = document.getElementById('copyNote');
 
   function refreshSettingsUI(){
     passwordlessToggle.checked = passwordless;
     toggleLabel.textContent = passwordless ? '目前：免密码' : '目前：需要密码';
     settingsFab.classList.toggle('active', passwordless);
-    var base = window.location.origin + window.location.pathname;
-    shareLinkInput.value = base + '?mode=' + (passwordless ? 'open' : 'locked');
-    copyNote.textContent = '';
   }
   refreshSettingsUI();
 
   settingsFab.addEventListener('click', function(){
-    settingsPanel.classList.toggle('open');
+    if(isAdminAuthed()){
+      settingsPanel.classList.toggle('open');
+    } else {
+      openModal('admin');
+    }
   });
   document.addEventListener('click', function(e){
     if(settingsPanel.classList.contains('open') &&
@@ -809,23 +769,6 @@
     refreshSettingsUI();
     buildGrid();
   });
-  copyLinkBtn.addEventListener('click', function(){
-    var text = shareLinkInput.value;
-    function fallback(){
-      shareLinkInput.focus();
-      shareLinkInput.select();
-      try{ document.execCommand('copy'); copyNote.textContent = '已复制连结'; }
-      catch(e){ copyNote.textContent = '请手动选取并复制'; }
-    }
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(function(){
-        copyNote.textContent = '已复制连结，发送给其他装置打开一次即可';
-      }, fallback);
-    } else {
-      fallback();
-    }
-  });
-
 
   var grid = document.getElementById('grid');
   var tiles = {};
@@ -854,6 +797,8 @@
   var modalBackdrop = document.getElementById('modalBackdrop');
   var modalCard = document.getElementById('modalCard');
   var modalTitle = document.getElementById('modalTitle');
+  var modalHint = document.getElementById('modalHint');
+  var modalStamp = document.getElementById('modalStamp');
   var modalInput = document.getElementById('modalInput');
   var modalError = document.getElementById('modalError');
   var modalSubmit = document.getElementById('modalSubmit');
@@ -863,7 +808,15 @@
 
   function openModal(id){
     pendingId = id;
-    modalTitle.textContent = '故事 ' + id;
+    if(id === 'admin'){
+      modalTitle.textContent = '组长设置';
+      modalHint.textContent = '输入组长密码以开关免密码模式。';
+      modalStamp.textContent = '组长专用';
+    } else {
+      modalTitle.textContent = '故事 ' + id;
+      modalHint.textContent = '输入你收到的密码，解锁这个故事的内容。';
+      modalStamp.textContent = '机密故事';
+    }
     modalInput.value = '';
     modalError.textContent = '';
     modalBackdrop.classList.add('open');
@@ -874,6 +827,20 @@
     pendingId = null;
   }
   function tryUnlock(){
+    if(pendingId === 'admin'){
+      if(modalInput.value === ADMIN_PASSWORD){
+        saveAdminAuthed();
+        closeModal();
+        settingsPanel.classList.add('open');
+      } else {
+        modalError.textContent = '组长密码不正确，请再试一次。';
+        modalCard.classList.remove('shake');
+        void modalCard.offsetWidth;
+        modalCard.classList.add('shake');
+        modalInput.select();
+      }
+      return;
+    }
     var story = STORIES.find(function(s){ return s.id === pendingId; });
     if(!story) return;
     if(modalInput.value === story.password){
